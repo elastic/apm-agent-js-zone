@@ -9,7 +9,7 @@
 import {ifEnvSupports} from '../test-util';
 
 describe('element', function() {
-  let button;
+  let button: HTMLButtonElement;
 
   beforeEach(function() {
     button = document.createElement('button');
@@ -28,7 +28,7 @@ describe('element', function() {
 
        clickEvent.initEvent('click', true, true);
 
-       const listener = function(event) {
+       const listener = function(event: Event) {
          callCount++;
          expect(event).toBe(clickEvent);
        };
@@ -36,7 +36,7 @@ describe('element', function() {
        // `this` would be null inside the method when `addEventListener` is called from strict mode
        // it would be `window`:
        // - when called from non strict-mode,
-       // - when `window.addEventListener` is called explicitely.
+       // - when `window.addEventListener` is called explicitly.
        addEventListener('click', listener);
 
        button.dispatchEvent(clickEvent);
@@ -88,10 +88,10 @@ describe('element', function() {
      * 3. Pay the cost of throwing an exception in event tasks and verifying that we are the
      *    top most frame.
      *
-     * For now we are choosing to ignore it and assume that this arrises in tests only.
+     * For now we are choosing to ignore it and assume that this arises in tests only.
      * As an added measure we make sure that all jasmine tests always run in a task. See: jasmine.ts
      */
-    global[Zone['__symbol__']('setTimeout')](() => {
+    (window as any)[(Zone as any).__symbol__('setTimeout')](() => {
       let log = '';
       button.addEventListener('click', () => {
         Zone.current.scheduleMicroTask('test', () => log += 'microtask;');
@@ -108,7 +108,7 @@ describe('element', function() {
      function() {
        const eventListener = {
          x: 5,
-         handleEvent: function(event) {
+         handleEvent: function(event: Event) {
            // Test that context is preserved
            expect(this.x).toBe(5);
 
@@ -183,7 +183,7 @@ describe('element', function() {
 
 
   it('should only add a listener once for a given set of arguments', function() {
-    const log = [];
+    const log: string[] = [];
     const clickEvent = document.createEvent('Event');
 
     function listener() {
@@ -206,7 +206,7 @@ describe('element', function() {
   });
 
   it('should correctly handler capturing versus nonCapturing eventListeners', function() {
-    const log = [];
+    const log: string[] = [];
     const clickEvent = document.createEvent('Event');
 
     function capturingListener() {
@@ -228,7 +228,7 @@ describe('element', function() {
   });
 
   it('should correctly handler a listener that is both capturing and nonCapturing', function() {
-    const log = [];
+    const log: string[] = [];
     const clickEvent = document.createEvent('Event');
 
     function listener() {
@@ -301,7 +301,7 @@ describe('element', function() {
     });
 
     it('should be able to deregister the same event twice', function() {
-      const listener = (event) => {};
+      const listener = (event: Event) => {};
       document.body.addEventListener('click', listener, false);
       document.body.removeEventListener('click', listener, false);
       document.body.removeEventListener('click', listener, false);
@@ -309,7 +309,7 @@ describe('element', function() {
   });
 
   describe('onEvent default behavior', function() {
-    let checkbox;
+    let checkbox: HTMLInputElement;
     beforeEach(function() {
       checkbox = document.createElement('input');
       checkbox.type = 'checkbox';

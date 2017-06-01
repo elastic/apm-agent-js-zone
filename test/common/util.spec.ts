@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {patchMethod, zoneSymbol} from '../../lib/common/utils';
+import {patchMethod, patchProperty, zoneSymbol} from '../../lib/common/utils';
 
 describe('utils', function() {
 
@@ -14,17 +14,19 @@ describe('utils', function() {
     it('should patch target where the method is defined', () => {
       let args;
       let self;
-      const Type = function() {};
-      const method = Type.prototype.method = function(..._args) {
-        args = _args;
-        self = this;
-        return 'OK';
-      };
-      let delegateMethod;
-      let delegateSymbol;
+      class Type {
+        method(..._args: any[]) {
+          args = _args;
+          self = this;
+          return 'OK';
+        }
+      }
+      const method = Type.prototype.method;
+      let delegateMethod: Function;
+      let delegateSymbol: string;
 
       const instance = new Type();
-      expect(patchMethod(instance, 'method', (delegate, symbol, name) => {
+      expect(patchMethod(instance, 'method', (delegate: Function, symbol: string, name: string) => {
         expect(name).toEqual('method');
         delegateMethod = delegate;
         delegateSymbol = symbol;
@@ -38,7 +40,7 @@ describe('utils', function() {
       expect(self).toBe(instance);
       expect(delegateMethod).toBe(method);
       expect(delegateSymbol).toEqual(zoneSymbol('method'));
-      expect(Type.prototype[delegateSymbol]).toBe(method);
+      expect((Type.prototype as any)[delegateSymbol]).toBe(method);
     });
 
     it('should not double patch', () => {
@@ -59,25 +61,22 @@ describe('utils', function() {
       expect(pMethod).toBe(Type.prototype.method);
     });
 
-    it('should have a method name in the stacktrace', () => {
-      const fn = function someOtherName() {
-        throw new Error('MyError');
-      };
-      const target = {mySpecialMethodName: fn};
-      patchMethod(target, 'mySpecialMethodName', (delegate: Function) => {
-        return function(self, args) {
-          return delegate();
-        };
-      });
-      try {
-        target.mySpecialMethodName();
-      } catch (e) {
-        if (e.stack) {
-          expect(e.stack).toContain('mySpecialMethodName');
-        }
+    it('should not patch property which is not configurable', () => {
+      const TestType = function() {};
+      const originalDefineProperty = (Object as any)[zoneSymbol('defineProperty')];
+      if (originalDefineProperty) {
+        originalDefineProperty(
+            TestType.prototype, 'nonConfigurableProperty',
+            {configurable: false, writable: true, value: 'test'});
+      } else {
+        Object.defineProperty(
+            TestType.prototype, 'nonConfigurableProperty',
+            {configurable: false, writable: true, value: 'test'});
       }
+      patchProperty(TestType.prototype, 'nonConfigurableProperty');
+      const desc = Object.getOwnPropertyDescriptor(TestType.prototype, 'nonConfigurableProperty');
+      expect(desc.writable).toBeTruthy();
+      expect(!desc.get).toBeTruthy();
     });
   });
-
 });
-export let __something__;

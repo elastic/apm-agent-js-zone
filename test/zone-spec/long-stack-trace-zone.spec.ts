@@ -7,14 +7,15 @@
  */
 
 import {zoneSymbol} from '../../lib/common/utils';
-const defineProperty = Object[zoneSymbol('defineProperty')] || Object.defineProperty;
+const defineProperty = (Object as any)[zoneSymbol('defineProperty')] || Object.defineProperty;
 
 describe('longStackTraceZone', function() {
   let log: Error[];
   let lstz: Zone;
+  let longStackTraceZoneSpec = (Zone as any)['longStackTraceZoneSpec'];
 
   beforeEach(function() {
-    lstz = Zone.current.fork(Zone['longStackTraceZoneSpec']).fork({
+    lstz = Zone.current.fork(longStackTraceZoneSpec).fork({
       name: 'long-stack-trace-zone-test',
       onHandleError: (parentZoneDelegate: ZoneDelegate, currentZone: Zone, targetZone: Zone,
                       error: any): boolean => {
@@ -27,17 +28,25 @@ describe('longStackTraceZone', function() {
     log = [];
   });
 
+  function expectElapsed(stack: string, expectedCount: number) {
+    try {
+      let actualCount = stack.split('_Elapsed_').length;
+      if (actualCount !== expectedCount) {
+        expect(actualCount).toEqual(expectedCount);
+        console.log(stack);
+      }
+    } catch (e) {
+      expect(e).toBe(null);
+    }
+  }
+
   it('should produce long stack traces', function(done) {
     lstz.run(function() {
       setTimeout(function() {
         setTimeout(function() {
           setTimeout(function() {
-            try {
-              expect(log[0].stack.split('Elapsed: ').length).toBe(3);
-              done();
-            } catch (e) {
-              expect(e).toBe(null);
-            }
+            expectElapsed(log[0].stack, 3);
+            done();
           }, 0);
           throw new Error('Hello');
         }, 0);
@@ -46,12 +55,12 @@ describe('longStackTraceZone', function() {
   });
 
   it('should produce a long stack trace even if stack setter throws', (done) => {
-    let wasStackAssigne = false;
+    let wasStackAssigned = false;
     let error = new Error('Expected error');
     defineProperty(error, 'stack', {
       configurable: false,
       get: () => 'someStackTrace',
-      set: (v) => {
+      set: (v: any) => {
         throw new Error('no writes');
       }
     });
@@ -67,7 +76,7 @@ describe('longStackTraceZone', function() {
     });
   });
 
-  it('should produce long stack traces when reject in promise', function(done) {
+  it('should produce long stack traces when has uncaught error in promise', function(done) {
     lstz.runGuarded(function() {
       setTimeout(function() {
         setTimeout(function() {
@@ -80,17 +89,54 @@ describe('longStackTraceZone', function() {
             fail('should not get here');
           });
           setTimeout(function() {
-            try {
-              expect(log[0].stack.split('Elapsed: ').length).toBe(5);
-              done();
-            } catch (e) {
-              expect(e).toBe(null);
-            }
+            expectElapsed(log[0].stack, 5);
+            done();
           }, 0);
         }, 0);
       }, 0);
     });
   });
-});
 
-export let __something__;
+  it('should produce long stack traces when handling error in promise', function(done) {
+    lstz.runGuarded(function() {
+      setTimeout(function() {
+        setTimeout(function() {
+          let promise = new Promise(function(resolve, reject) {
+            setTimeout(function() {
+              try {
+                throw new Error('Hello Promise');
+              } catch (err) {
+                reject(err);
+              }
+            }, 0);
+          });
+          promise.catch(function(error) {
+            // should be able to get long stack trace
+            const longStackFrames: string = longStackTraceZoneSpec.getLongStackTrace(error);
+            expectElapsed(longStackFrames, 4);
+            done();
+          });
+        }, 0);
+      }, 0);
+    });
+  });
+
+  it('should not produce long stack traces if Error.stackTraceLimit = 0', function(done) {
+    const originalStackTraceLimit = Error.stackTraceLimit;
+    lstz.run(function() {
+      setTimeout(function() {
+        setTimeout(function() {
+          setTimeout(function() {
+            if (log[0].stack) {
+              expectElapsed(log[0].stack, 1);
+            }
+            Error.stackTraceLimit = originalStackTraceLimit;
+            done();
+          }, 0);
+          Error.stackTraceLimit = 0;
+          throw new Error('Hello');
+        }, 0);
+      }, 0);
+    });
+  });
+});

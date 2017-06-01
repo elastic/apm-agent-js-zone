@@ -9,7 +9,7 @@
 describe('ZoneAwareError', () => {
   // If the environment does not supports stack rewrites, then these tests will fail
   // and there is no point in running them.
-  if (!Error['stackRewrite']) return;
+  if (!(Error as any)['stackRewrite']) return;
 
   it('should have all properties from NativeError', () => {
     let obj: any = new Object();
@@ -18,11 +18,27 @@ describe('ZoneAwareError', () => {
   });
 
   it('should support prepareStackTrace', () => {
-    (<any>Error).prepareStackTrace = function(error, stack) {
+    const originalPrepareStackTrace = (<any>Error).prepareStackTrace;
+    (<any>Error).prepareStackTrace = function(error: Error, stack: string) {
       return stack;
     };
     let obj: any = new Object();
     Error.captureStackTrace(obj);
     expect(obj.stack[0].getFileName()).not.toBeUndefined();
+    (<any>Error).prepareStackTrace = originalPrepareStackTrace;
+  });
+
+  it('should not add additional stacktrace from Zone when use prepareStackTrace', () => {
+    const originalPrepareStackTrace = (<any>Error).prepareStackTrace;
+    (<any>Error).prepareStackTrace = function(error: Error, stack: string) {
+      return stack;
+    };
+    let obj: any = new Object();
+    Error.captureStackTrace(obj);
+    expect(obj.stack.length).not.toBe(0);
+    obj.stack.forEach(function(st: any) {
+      expect(st.getFunctionName()).not.toEqual('zoneCaptureStackTrace');
+    });
+    (<any>Error).prepareStackTrace = originalPrepareStackTrace;
   });
 });

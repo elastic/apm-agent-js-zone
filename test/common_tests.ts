@@ -8,11 +8,13 @@
 
 import './common/microtasks.spec';
 import './common/zone.spec';
+import './common/task.spec';
 import './common/util.spec';
 import './common/Promise.spec';
 import './common/Error.spec';
 import './common/setInterval.spec';
 import './common/setTimeout.spec';
+import './common/toString.spec';
 import './zone-spec/long-stack-trace-zone.spec';
 import './zone-spec/async-test.spec';
 import './zone-spec/sync-test.spec';

@@ -8,9 +8,12 @@
 
 // Must be loaded before zone loads, so that zone can detect WTF.
 import './wtf_mock';
+import './custom_error';
 
 // Setup tests for Zone without microtask support
 import '../lib/zone';
+import '../lib/common/promise';
+import '../lib/common/to-string';
 import '../lib/node/node';
 import '../lib/zone-spec/async-test';
 import '../lib/zone-spec/fake-async-test';

@@ -7,14 +7,15 @@
  */
 
 import {ifEnvSupports} from '../test-util';
+declare const window: any;
 
 const TIMEOUT = 5000;
 
-if (!window['soucelabs']) {
-  // SouceLabs does not support WebSockets; skip these tests
+if (!window['saucelabs']) {
+  // sauceLabs does not support WebSockets; skip these tests
 
   describe('WebSocket', ifEnvSupports('WebSocket', function() {
-             let socket;
+             let socket: WebSocket;
              const TEST_SERVER_URL = 'ws://localhost:8001';
              const testZone = Zone.current.fork({name: 'test'});
 
@@ -75,7 +76,7 @@ if (!window['soucelabs']) {
                    expect(log).toEqual('a');
                    done();
                  }, 10);
-               };
+               }
 
                socket.addEventListener('message', logOnMessage);
                socket.send('hi');

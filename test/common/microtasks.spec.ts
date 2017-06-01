@@ -14,7 +14,7 @@ describe('Microtasks', function() {
   }
 
   it('should execute microtasks enqueued in the root zone', function(done) {
-    const log = [];
+    const log: number[] = [];
 
     Zone.current.scheduleMicroTask('test', () => log.push(1), null, scheduleFn);
     Zone.current.scheduleMicroTask('test', () => log.push(2), null, scheduleFn);
@@ -56,7 +56,7 @@ describe('Microtasks', function() {
 
     testZone.run(function() {
       resolvedPromise.then(function() {
-        expect(Zone.current).toBe(testZone);
+        expect(Zone.current.name).toBe(testZone.name);
         done();
       });
     });
@@ -65,7 +65,7 @@ describe('Microtasks', function() {
   it('should execute Promise wrapCallback in the zone where they are scheduled even if resolved ' +
          'in different zone.',
      function(done) {
-       let resolve;
+       let resolve: Function;
        const promise = new Promise(function(rs) {
          resolve = rs;
        });
@@ -106,4 +106,3 @@ describe('Microtasks', function() {
     });
   });
 });
-export let __something__;

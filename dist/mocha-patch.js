@@ -6,11 +6,18 @@
 * found in the LICENSE file at https://angular.io/license
 */
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (factory());
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(factory());
 }(this, (function () { 'use strict';
 
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
 (function (context) {
     var Mocha = context.Mocha;
     if (typeof Mocha === 'undefined') {
@@ -96,7 +103,6 @@
         };
         return modifyArguments(args, syncTest, asyncTest);
     }
-    
     context.describe = context.suite = Mocha.describe = function () {
         return mochaOriginal.describe.apply(this, wrapDescribeInZone(arguments));
     };

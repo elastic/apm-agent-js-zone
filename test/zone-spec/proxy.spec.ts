@@ -15,7 +15,7 @@ describe('ProxySpec', () => {
   let proxyZone: Zone;
 
   beforeEach(() => {
-    ProxyZoneSpec = Zone['ProxyZoneSpec'];
+    ProxyZoneSpec = (Zone as any)['ProxyZoneSpec'];
     expect(typeof ProxyZoneSpec).toBe('function');
     delegate = {name: 'delegate'};
     proxyZoneSpec = new ProxyZoneSpec(delegate);
@@ -76,13 +76,14 @@ describe('ProxySpec', () => {
     });
 
     it('should fork', () => {
-      const forkeZone = proxyZone.fork({name: 'fork'});
-      expect(forkeZone).not.toBe(proxyZone);
-      expect(forkeZone.name).toBe('fork');
+      const forkedZone = proxyZone.fork({name: 'fork'});
+      expect(forkedZone).not.toBe(proxyZone);
+      expect(forkedZone.name).toBe('fork');
       let called = false;
       proxyZoneSpec.setDelegate({
         name: '.',
-        onFork: (parentZoneDelegate, currentZone, targetZone, zoneSpec) => {
+        onFork: (parentZoneDelegate: ZoneDelegate, currentZone: Zone, targetZone: Zone,
+                 zoneSpec: ZoneSpec) => {
           expect(currentZone).toBe(proxyZone);
           expect(targetZone).toBe(proxyZone), expect(zoneSpec.name).toBe('fork2');
           called = true;
@@ -93,7 +94,7 @@ describe('ProxySpec', () => {
     });
 
     it('should intercept', () => {
-      const fn = (a) => a;
+      const fn = (a: any) => a;
       expect(proxyZone.wrap(fn, 'test')('works')).toEqual('works');
       proxyZoneSpec.setDelegate({
         name: '.',
@@ -137,7 +138,7 @@ describe('ProxySpec', () => {
     });
 
     it('should Task', () => {
-      const fn = () => null;
+      const fn = () => null as void;
       const task = proxyZone.scheduleMacroTask('test', fn, {}, () => null, () => null);
       expect(task.source).toEqual('test');
       proxyZone.cancelTask(task);

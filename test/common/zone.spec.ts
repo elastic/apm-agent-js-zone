@@ -6,8 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {zoneSymbol} from '../../lib/common/utils';
-
 describe('Zone', function() {
   const rootZone = Zone.current;
 
@@ -83,6 +81,30 @@ describe('Zone', function() {
     });
   });
 
+  describe('run out side of current zone', function() {
+    it('should be able to get root zone', function() {
+      Zone.current.fork({name: 'testZone'}).run(function() {
+        expect(Zone.root.name).toEqual('<root>');
+      });
+    });
+
+    it('should be able to get run under rootZone', function() {
+      Zone.current.fork({name: 'testZone'}).run(function() {
+        Zone.root.run(() => {
+          expect(Zone.current.name).toEqual('<root>');
+        });
+      });
+    });
+
+    it('should be able to get run outside of current zone', function() {
+      Zone.current.fork({name: 'testZone'}).run(function() {
+        Zone.root.fork({name: 'newTestZone'}).run(() => {
+          expect(Zone.current.name).toEqual('newTestZone');
+          expect(Zone.current.parent.name).toEqual('<root>');
+        });
+      });
+    });
+  });
 
   describe('get', function() {
     it('should store properties', function() {
@@ -99,12 +121,12 @@ describe('Zone', function() {
 
   describe('task', () => {
     function noop() {}
-    let log;
+    let log: any[];
     const zone: Zone = Zone.current.fork({
       name: 'parent',
       onHasTask: (delegate: ZoneDelegate, current: Zone, target: Zone, hasTaskState: HasTaskState):
                      void => {
-                       hasTaskState['zone'] = target.name;
+                       (hasTaskState as any)['zone'] = target.name;
                        log.push(hasTaskState);
                      },
       onScheduleTask: (delegate: ZoneDelegate, current: Zone, target: Zone, task: Task) => {
@@ -118,13 +140,36 @@ describe('Zone', function() {
       log = [];
     });
 
+    it('task can only run in the zone of creation', () => {
+      const task =
+          zone.fork({name: 'createZone'}).scheduleMacroTask('test', noop, null, noop, noop);
+      expect(() => {
+        Zone.current.fork({name: 'anotherZone'}).runTask(task);
+      })
+          .toThrowError(
+              'A task can only be run in the zone of creation! (Creation: createZone; Execution: anotherZone)');
+      task.zone.cancelTask(task);
+    });
+
+    it('task can only cancel in the zone of creation', () => {
+      const task =
+          zone.fork({name: 'createZone'}).scheduleMacroTask('test', noop, null, noop, noop);
+      expect(() => {
+        Zone.current.fork({name: 'anotherZone'}).cancelTask(task);
+      })
+          .toThrowError(
+              'A task can only be cancelled in the zone of creation! (Creation: createZone; Execution: anotherZone)');
+      task.zone.cancelTask(task);
+    });
+
     it('should prevent double cancellation', () => {
       const task = zone.scheduleMacroTask('test', () => log.push('macroTask'), null, noop, noop);
       zone.cancelTask(task);
       try {
         zone.cancelTask(task);
       } catch (e) {
-        expect(e.message).toContain('already canceled');
+        expect(e.message).toContain(
+            'macroTask \'test\': can not transition to \'canceling\', expecting state \'scheduled\' or \'running\', was \'notScheduled\'.');
       }
     });
 
@@ -186,6 +231,96 @@ describe('Zone', function() {
       ]);
     });
 
+    it('should allow rescheduling a task on a separate zone', () => {
+      const log: any[] = [];
+      const zone = Zone.current.fork({
+        name: 'test-root',
+        onHasTask:
+            (delegate: ZoneDelegate, current: Zone, target: Zone, hasTaskState: HasTaskState) => {
+              (hasTaskState as any)['zone'] = target.name;
+              log.push(hasTaskState);
+            }
+      });
+      const left = zone.fork({name: 'left'});
+      const right = zone.fork({
+        name: 'right',
+        onScheduleTask: (delegate: ZoneDelegate, current: Zone, target: Zone, task: Task): Task => {
+          log.push(
+              {pos: 'before', method: 'onScheduleTask', zone: current.name, task: task.zone.name});
+          // Cancel the current scheduling of the task
+          task.cancelScheduleRequest();
+          // reschedule on a different zone.
+          task = left.scheduleTask(task);
+          log.push(
+              {pos: 'after', method: 'onScheduleTask', zone: current.name, task: task.zone.name});
+          return task;
+        }
+      });
+      const rchild = right.fork({
+        name: 'rchild',
+        onScheduleTask: (delegate: ZoneDelegate, current: Zone, target: Zone, task: Task): Task => {
+          log.push(
+              {pos: 'before', method: 'onScheduleTask', zone: current.name, task: task.zone.name});
+          task = delegate.scheduleTask(target, task);
+          log.push(
+              {pos: 'after', method: 'onScheduleTask', zone: current.name, task: task.zone.name});
+          expect((task as any)._zoneDelegates.map((zd: ZoneDelegate) => zd.zone.name)).toEqual([
+            'left', 'test-root', 'ProxyZone'
+          ]);
+          return task;
+        }
+      });
+
+      const task = rchild.scheduleMacroTask('testTask', () => log.push('WORK'), {}, noop, noop);
+      expect(task.zone).toEqual(left);
+      log.push(task.zone.name);
+      task.invoke();
+      expect(log).toEqual([
+        {pos: 'before', method: 'onScheduleTask', zone: 'rchild', task: 'rchild'},
+        {pos: 'before', method: 'onScheduleTask', zone: 'right', task: 'rchild'},
+        {microTask: false, macroTask: true, eventTask: false, change: 'macroTask', zone: 'left'}, {
+          microTask: false,
+          macroTask: true,
+          eventTask: false,
+          change: 'macroTask',
+          zone: 'test-root'
+        },
+        {pos: 'after', method: 'onScheduleTask', zone: 'right', task: 'left'},
+        {pos: 'after', method: 'onScheduleTask', zone: 'rchild', task: 'left'}, 'left', 'WORK',
+        {microTask: false, macroTask: false, eventTask: false, change: 'macroTask', zone: 'left'}, {
+          microTask: false,
+          macroTask: false,
+          eventTask: false,
+          change: 'macroTask',
+          zone: 'test-root'
+        }
+      ]);
+    });
+
+    it('period task should not transit to scheduled state after being cancelled in running state',
+       () => {
+         const zone = Zone.current.fork({name: 'testZone'});
+
+         const task = zone.scheduleMacroTask('testPeriodTask', () => {
+           zone.cancelTask(task);
+         }, {isPeriodic: true}, () => {}, () => {});
+
+         task.invoke();
+         expect(task.state).toBe('notScheduled');
+       });
+
+    it('event task should not transit to scheduled state after being cancelled in running state',
+       () => {
+         const zone = Zone.current.fork({name: 'testZone'});
+
+         const task = zone.scheduleEventTask('testEventTask', () => {
+           zone.cancelTask(task);
+         }, null, () => {}, () => {});
+
+         task.invoke();
+         expect(task.state).toBe('notScheduled');
+       });
+
     describe('assert ZoneAwarePromise', () => {
       it('should not throw when all is OK', () => {
         Zone.assertZonePatched();
@@ -209,7 +344,7 @@ describe('Zone', function() {
   });
 
   describe('invoking tasks', () => {
-    let log;
+    let log: string[];
     function noop() {}
 
 
@@ -230,6 +365,41 @@ describe('Zone', function() {
       }, null, noop, noop);
 
       macro.invoke();
+    });
+
+    it('should convert task to json without cyclic error', () => {
+      const z = Zone.current;
+      const event = z.scheduleEventTask('test', () => {}, null, noop, noop);
+      const micro = z.scheduleMicroTask('test', () => {});
+      const macro = z.scheduleMacroTask('test', () => {}, null, noop, noop);
+      expect(function() {
+        JSON.stringify(event);
+      }).not.toThrow();
+      expect(function() {
+        JSON.stringify(micro);
+      }).not.toThrow();
+      expect(function() {
+        JSON.stringify(macro);
+      }).not.toThrow();
+    });
+
+    it('should call onHandleError callback when zoneSpec onHasTask throw error', () => {
+      const spy = jasmine.createSpy('error');
+      const hasTaskZone = Zone.current.fork({
+        name: 'hasTask',
+        onHasTask: (delegate: ZoneDelegate, currentZone: Zone, targetZone: Zone,
+                    hasTasState: HasTaskState) => {
+          throw new Error('onHasTask Error');
+        },
+        onHandleError:
+            (delegate: ZoneDelegate, currentZone: Zone, targetZone: Zone, error: Error) => {
+              spy(error.message);
+              return delegate.handleError(targetZone, error);
+            }
+      });
+
+      const microTask = hasTaskZone.scheduleMicroTask('test', () => {}, null, () => {});
+      expect(spy).toHaveBeenCalledWith('onHasTask Error');
     });
   });
 });

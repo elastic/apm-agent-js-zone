@@ -8,25 +8,39 @@
 
 'use strict';
 import {isNode, zoneSymbol} from '../../lib/common/utils';
+declare const global: any;
 
 describe('setInterval', function() {
 
   it('should work with setInterval', function(done) {
     let cancelId: any;
-    const testZone = Zone.current.fork(Zone['wtfZoneSpec']).fork({name: 'TestZone'});
+    const testZone = Zone.current.fork((Zone as any)['wtfZoneSpec']).fork({name: 'TestZone'});
     testZone.run(() => {
-      let id;
+      let id: number;
+      let intervalCount = 0;
+      let timeoutRunning = false;
       const intervalFn = function() {
+        intervalCount++;
         expect(Zone.current.name).toEqual(('TestZone'));
+        if (timeoutRunning) {
+          return;
+        }
+        timeoutRunning = true;
         global[zoneSymbol('setTimeout')](function() {
+          const intervalUnitLog = [
+            '> Zone:invokeTask:setInterval("<root>::ProxyZone::WTF::TestZone")',
+            '< Zone:invokeTask:setInterval'
+          ];
+          let intervalLog: string[] = [];
+          for (let i = 0; i < intervalCount; i++) {
+            intervalLog = intervalLog.concat(intervalUnitLog);
+          }
           expect(wtfMock.log).toEqual([
             '# Zone:fork("<root>::ProxyZone::WTF", "TestZone")',
             '> Zone:invoke:unit-test("<root>::ProxyZone::WTF::TestZone")',
             '# Zone:schedule:macroTask:setInterval("<root>::ProxyZone::WTF::TestZone", ' + id + ')',
-            '< Zone:invoke:unit-test',
-            '> Zone:invokeTask:setInterval("<root>::ProxyZone::WTF::TestZone")',
-            '< Zone:invokeTask:setInterval'
-          ]);
+            '< Zone:invoke:unit-test'
+          ].concat(intervalLog));
           clearInterval(cancelId);
           done();
         });
@@ -42,8 +56,9 @@ describe('setInterval', function() {
       // node.js. They do not stringify properly since they contain circular references.
       id = JSON.stringify((<MacroTask>cancelId).data, function replaceTimer(key, value) {
         if (key == 'handleId' && typeof value == 'object') return value.constructor.name;
+        if (typeof value === 'function') return value.name;
         return value;
-      });
+      }) as any as number;
       expect(wtfMock.log).toEqual([
         '# Zone:fork("<root>::ProxyZone::WTF", "TestZone")',
         '> Zone:invoke:unit-test("<root>::ProxyZone::WTF::TestZone")',
