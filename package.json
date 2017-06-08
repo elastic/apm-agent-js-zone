@@ -1,5 +1,5 @@
 {
-  "name": "zone.js",
+  "name": "opbeat-zone",
   "version": "0.8.11",
   "description": "Zones for JavaScript",
   "main": "dist/zone-node.js",
