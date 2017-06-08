@@ -565,8 +565,9 @@ export function patchClass(className: string) {
 }
 
 export function patchMethod(
-    target: any, name: string, patchFn: (delegate: Function, delegateName: string, name: string) =>
-                                   (self: any, args: any[]) => any): Function {
+    target: any, name: string,
+    patchFn: (delegate: Function, delegateName: string, name: string) => (self: any, args: any[]) =>
+        any): Function {
   let proto = target;
   while (proto && !proto.hasOwnProperty(name)) {
     proto = Object.getPrototypeOf(proto);
