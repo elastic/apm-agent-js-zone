@@ -323,6 +323,10 @@ interface _ZonePrivate {
   patchEventTargetMethods:
       (obj: any, addFnName?: string, removeFnName?: string, metaCreator?: any) => boolean;
   patchOnProperties: (obj: any, properties: string[]) => void;
+  patchMethod:
+      (target: any, name: string,
+       patchFn: (delegate: Function, delegateName: string, name: string) =>
+           (self: any, args: any[]) => any) => Function;
 }
 
 /** @internal */
@@ -1295,7 +1299,8 @@ const Zone: ZoneType = (function(global: any) {
     scheduleMicroTask: scheduleMicroTask,
     showUncaughtError: () => !(Zone as any)[__symbol__('ignoreConsoleErrorUncaughtError')],
     patchEventTargetMethods: () => false,
-    patchOnProperties: noop
+    patchOnProperties: noop,
+    patchMethod: () => noop
   };
 
 
