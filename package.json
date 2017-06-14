@@ -1,6 +1,6 @@
 {
   "name": "opbeat-zone",
-  "version": "0.8.12",
+  "version": "0.8.12-prm",
   "description": "Zones for JavaScript",
   "main": "dist/zone-node.js",
   "browser": "dist/zone.js",
