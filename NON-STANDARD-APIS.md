@@ -1,10 +1,9 @@
 # Zone.js's support for non standard apis
 
-Zone.js patched most standard APIs so they can be in zone. such as DOM events listener, XMLHttpRequest in Browser
- and EventEmitter, fs API in nodejs. 
+Zone.js patched most standard APIs such as DOM event listeners, XMLHttpRequest in Browser, EventEmitter and fs API in Node.js so they can be in zone.
   
-But there are still a lot of non standard APIs are not patched by default, such as MediaQuery, Notification, 
- WebAudio and so on. We are adding the support to those APIs, and the progress will be updated here.
+But there are still a lot of non standard APIs that are not patched by default, such as MediaQuery, Notification, 
+ WebAudio and so on. We are adding support to those APIs, and our progress is updated here.
  
 ## Currently supported non standard Web APIs 
 
@@ -95,11 +94,69 @@ to load the patch, you should load in the following order.
 ## Usage
 
 By default, those APIs' support will not be loaded in zone.js or zone-node.js,
-so if you want to load those API's support, you should load those files by yourself
+so if you want to load those API's support, you should load those files by yourself.
 
-for example, if you want to add MediaQuery patch, you should do like this. 
+For example, if you want to add MediaQuery patch, you should do like this: 
 
 ```
   <script src="path/zone.js"></script> 
   <script src="path/webapis-media-query.js"></script> 
 ```  
+
+* rxjs
+
+`zone.js` also provide a `rxjs` patch to make sure rxjs Observable/Subscription/Operator run in correct zone.
+For details please refer to [pull request 843](https://github.com/angular/zone.js/pull/843). The following sample code describes the idea.
+
+```
+const constructorZone = Zone.current.fork({name: 'constructor'});
+const subscriptionZone = Zone.current.fork({name: 'subscription'});
+const operatorZone = Zone.current.fork({name: 'operator'});
+
+let observable;
+let subscriber;
+constructorZone.run(() => {
+  observable = new Observable((_subscriber) => {
+    subscriber = _subscriber;
+    console.log('current zone when construct observable:', Zone.current.name); // will output constructor.
+    return () => {
+      console.log('current zone when unsubscribe observable:', Zone.current.name); // will output constructor.
+    }
+  });
+});
+
+subscriptionZone.run(() => {
+  observable.subscribe(() => {
+    console.log('current zone when subscription next', Zone.current.name); // will output subscription. 
+  }, () => {
+    console.log('current zone when subscription error', Zone.current.name); // will output subscription. 
+  }, () => {
+    console.log('current zone when subscription complete', Zone.current.name); // will output subscription. 
+  });
+});
+
+operatorZone.run(() => {
+  observable.map(() => {
+    console.log('current zone when map operator', Zone.current.name); // will output operator. 
+  });
+});
+```
+
+Currently basically everything the `rxjs` API includes
+
+- Observable
+- Subscription
+- Subscriber
+- Operators 
+- Scheduler 
+
+is patched, so each asynchronous call will run in the correct zone.
+
+## Usage.
+
+For example, in an Angular application, you can load this patch in your `app.module.ts`.
+
+```
+import 'zone.js/dist/zone-patch-rxjs';
+```
+

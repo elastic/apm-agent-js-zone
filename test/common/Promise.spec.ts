@@ -6,7 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {isNode, zoneSymbol} from '../../lib/common/utils';
 import {ifEnvSupports} from '../test-util';
+
 declare const global: any;
 
 class MicroTaskQueueZoneSpec implements ZoneSpec {
@@ -54,6 +56,31 @@ describe(
         queueZone = Zone.current.fork(new MicroTaskQueueZoneSpec());
 
         log = [];
+      });
+
+      xit('should allow set es6 Promise after load ZoneAwarePromise', (done) => {
+        const ES6Promise = require('es6-promise').Promise;
+        const NativePromise = global[zoneSymbol('Promise')];
+
+        try {
+          global['Promise'] = ES6Promise;
+          Zone.assertZonePatched();
+          expect(global[zoneSymbol('Promise')]).toBe(ES6Promise);
+          const promise = Promise.resolve(0);
+          console.log('promise', promise);
+          promise
+              .then(value => {
+                expect(value).toBe(0);
+                done();
+              })
+              .catch(error => {
+                fail(error);
+              });
+        } finally {
+          global['Promise'] = NativePromise;
+          Zone.assertZonePatched();
+          expect(global[zoneSymbol('Promise')]).toBe(NativePromise);
+        }
       });
 
       it('should pretend to be a native code', () => {
@@ -365,6 +392,28 @@ describe(
               expect(value).toEqual(['resolution', 'v1']);
             });
           });
+
+          it('should resolve generators', ifEnvSupports(
+                                              () => {
+                                                return isNode;
+                                              },
+                                              () => {
+                                                const generators: any = function*() {
+                                                  yield Promise.resolve(1);
+                                                  yield Promise.resolve(2);
+                                                  return;
+                                                };
+                                                queueZone.run(() => {
+                                                  let value = null;
+                                                  Promise.all(generators()).then(val => {
+                                                    value = val;
+                                                  });
+                                                  // expect(Zone.current.get('queue').length).toEqual(2);
+                                                  flushMicrotasks();
+                                                  expect(value).toEqual([1, 2]);
+                                                });
+
+                                              }));
         });
       });
 

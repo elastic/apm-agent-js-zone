@@ -68,3 +68,39 @@ export function supportPatchXHROnProperty() {
   }
   return true;
 }
+
+let supportSetErrorStack = true;
+
+export function isSupportSetErrorStack() {
+  try {
+    throw new Error('test');
+  } catch (err) {
+    try {
+      err.stack = 'new stack';
+      supportSetErrorStack = err.stack === 'new stack';
+    } catch (error) {
+      supportSetErrorStack = false;
+    }
+  }
+  return supportSetErrorStack;
+}
+
+(isSupportSetErrorStack as any).message = 'supportSetErrorStack';
+
+export function asyncTest(testFn: Function, zone: Zone = Zone.current) {
+  const AsyncTestZoneSpec = (Zone as any)['AsyncTestZoneSpec'];
+  return (done: Function) => {
+    let asyncTestZone: Zone = zone.fork(new AsyncTestZoneSpec(() => {}, (error: Error) => {
+      fail(error);
+    }, 'asyncTest'));
+    asyncTestZone.run(testFn, this, [done]);
+  };
+}
+
+export function getIEVersion() {
+  const userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf('msie') != -1) {
+    return parseInt(userAgent.split('msie')[1]);
+  }
+  return null;
+}

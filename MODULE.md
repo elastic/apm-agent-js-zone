@@ -1,9 +1,8 @@
 # Modules
 
-zone.js patches the async APIs which described above, but those patch will have some overhead,
-from zone.js v0.8.9, you can choose which web API module you want to patch, for example, 
-the below samples show how to disable some modules, you just need to define some global variables 
-before load zone.js.
+Starting from zone.js v0.8.9, you can choose which web API modules you want to patch as to reduce overhead introduced by the patching of these modules. For example, 
+the below samples show how to disable some modules. You just need to define a few global variables 
+before loading zone.js.
 
 ```
   <script>
@@ -17,7 +16,7 @@ before load zone.js.
   <script src="../dist/zone.js"></script>
 ```
 
-Below is the full list of current support modules.
+Below is the full list of currently supported modules.
 
 - Common 
 
@@ -34,8 +33,11 @@ Below is the full list of current support modules.
 |--|--|--|
 |on_property|target.onProp will become zone aware target.addEventListener(prop)|__Zone_disable_on_property = true|
 |timers|setTimeout/setInterval/setImmediate will be patched as Zone MacroTask|__Zone_disable_timer = true|
+|requestAnimationFrame|requestAnimationFrame will be patched as Zone MacroTask|__Zone_disable_requestAnimationFrame = true|
 |blocking|alert/prompt/confirm will be patched as Zone.run|__Zone_disable_blocking = true|
 |EventTarget|target.addEventListener will be patched as Zone aware EventTask|__Zone_disable_EventTarget = true|
+|IE BrowserTools check|in IE, browser tool will not use zone patched eventListener|__Zone_disable_IE_check = true|
+|CrossContext check|in webdriver, enable check event listener is cross context|__Zone_enable_cross_context_check = true|
 |XHR|XMLHttpRequest will be patched as Zone aware MacroTask|__Zone_disable_XHR = true|
 |geolocation|navigator.geolocation's prototype will be patched as Zone.run|__Zone_disable_geolocation = true|
 |PromiseRejectionEvent|PromiseRejectEvent will fire when ZoneAwarePromise has unhandled error|__Zone_disable_PromiseRejectionEvent = true|
@@ -53,9 +55,30 @@ Below is the full list of current support modules.
 |handleUnhandledPromiseRejection|NodeJS handle unhandledPromiseRejection from ZoneAwarePromise|__Zone_disable_handleUnhandledPromiseRejection = true|
 |crypto|NodeJS patch crypto function as macroTask|__Zone_disable_crypto = true|
 
+- on_property
+
+You can also disable specific on_properties by setting `__Zone_ignore_on_properties` as follows: for example,
+if you want to disable `window.onmessage` and `HTMLElement.prototype.onclick` from zone.js patching,
+you can do like this.
+
+```
+ <script>
+    __Zone_ignore_on_properties = [
+      {
+        target: window,
+        ignoreProperties: ['message']
+      }, {
+        target: HTMLElement.prototype,
+        ignoreProperties: ['click']
+      }
+    ];
+  </script>
+  <script src="../dist/zone.js"></script>
+```
+
 - Angular(2+)
 
-Angular use zone.js to manage async operations and decide when to perform change detection, so in Angular, 
+Angular uses zone.js to manage async operations and decide when to perform change detection. Thus, in Angular, 
 the following APIs should be patched, otherwise Angular may not work as expected.
 
 1. ZoneAwarePromise

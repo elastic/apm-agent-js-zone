@@ -23,13 +23,27 @@ function generateScript(inFile, outFile, minify, callback) {
         .pipe(rollup({
           entry: inFile,
           format: 'umd',
+          onwarn: function (warning) {
+            // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
+            if (warning.code === 'THIS_IS_UNDEFINED') {
+              return;
+            }
+            console.error(warning.message);
+          },
           banner: '/**\n'
               + '* @license\n'
               + '* Copyright Google Inc. All Rights Reserved.\n'
               + '*\n'
               + '* Use of this source code is governed by an MIT-style license that can be\n'
               + '* found in the LICENSE file at https://angular.io/license\n'
-              + '*/'
+              + '*/',
+          globals: {
+            'rxjs/Observable': 'Rx',
+            'rxjs/Subscriber': 'Rx',
+            'rxjs/Subscription': 'Rx',
+            'rxjs/scheduler/asap': 'Rx.Scheduler',
+            'rxjs/symbol/rxSubscriber': 'Rx.Symbol'
+          }
         }))
         .pipe(rename(outFile)),
   ];
@@ -64,8 +78,16 @@ gulp.task('compile', function(cb) {
   tsc('tsconfig.json', cb);
 });
 
+gulp.task('compile-node', function(cb) {
+  tsc('tsconfig-node.json', cb);
+});
+
 gulp.task('compile-esm', function(cb) {
   tsc('tsconfig-esm.json', cb);
+});
+
+gulp.task('compile-esm-node', function(cb) {
+  tsc('tsconfig-esm-node.json', cb);
 });
 
 gulp.task('build/zone.js.d.ts', ['compile-esm'], function() {
@@ -73,7 +95,7 @@ gulp.task('build/zone.js.d.ts', ['compile-esm'], function() {
 });
 
 // Zone for Node.js environment.
-gulp.task('build/zone-node.js', ['compile-esm'], function(cb) {
+gulp.task('build/zone-node.js', ['compile-esm-node'], function(cb) {
   return generateScript('./lib/node/rollup-main.ts', 'zone-node.js', false, cb);
 });
 
@@ -83,7 +105,7 @@ gulp.task('build/zone.js', ['compile-esm'], function(cb) {
 });
 
 // Zone for electron/nw environment.
-gulp.task('build/zone-mix.js', ['compile-esm'], function(cb) {
+gulp.task('build/zone-mix.js', ['compile-esm-node'], function(cb) {
     return generateScript('./lib/mix/rollup-mix.ts', 'zone-mix.js', false, cb);
 });
 
@@ -113,6 +135,14 @@ gulp.task('build/webapis-notification.js', ['compile-esm'], function(cb) {
 
 gulp.task('build/webapis-notification.min.js', ['compile-esm'], function(cb) {
     return generateScript('./lib/browser/webapis-notification.ts', 'webapis-notification.min.js', true, cb);
+});
+
+gulp.task('build/webapis-rtc-peer-connection.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/browser/webapis-rtc-peer-connection.ts', 'webapis-rtc-peer-connection.js', false, cb);
+});
+
+gulp.task('build/webapis-rtc-peer-connection.min.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/browser/webapis-rtc-peer-connection.ts', 'webapis-rtc-peer-connection.min.js', true, cb);
 });
 
 gulp.task('build/webapis-shadydom.js', ['compile-esm'], function(cb) {
@@ -199,6 +229,19 @@ gulp.task('build/sync-test.js', ['compile-esm'], function(cb) {
   return generateScript('./lib/zone-spec/sync-test.ts', 'sync-test.js', false, cb);
 });
 
+gulp.task('build/rxjs.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/rxjs/rxjs.ts', 'zone-patch-rxjs.js', false, cb);
+});
+
+gulp.task('build/rxjs.min.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/rxjs/rxjs.ts', 'zone-patch-rxjs.min.js', true, cb);
+});
+
+gulp.task('build/closure.js', function() {
+  return gulp.src('./lib/closure/zone_externs.js')
+             .pipe(gulp.dest('./dist'));
+});
+
 gulp.task('build', [
   'build/zone.js',
   'build/zone.js.d.ts',
@@ -210,6 +253,8 @@ gulp.task('build', [
   'build/webapis-media-query.min.js',
   'build/webapis-notification.js',
   'build/webapis-notification.min.js',
+  'build/webapis-rtc-peer-connection.js',
+  'build/webapis-rtc-peer-connection.min.js',
   'build/webapis-shadydom.js',
   'build/webapis-shadydom.min.js',
   'build/zone-patch-cordova.js',
@@ -231,10 +276,13 @@ gulp.task('build', [
   'build/wtf.min.js',
   'build/async-test.js',
   'build/fake-async-test.js',
-  'build/sync-test.js'
+  'build/sync-test.js',
+  'build/rxjs.js',
+  'build/rxjs.min.js',
+  'build/closure.js'
 ]);
 
-gulp.task('test/node', ['compile'], function(cb) {
+gulp.task('test/node', ['compile-node'], function(cb) {
   var JasmineRunner = require('jasmine');
   var jrunner = new JasmineRunner();
 
