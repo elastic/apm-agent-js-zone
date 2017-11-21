@@ -45,12 +45,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/angular/zone.js.git"
+    "url": "git://github.com/elastic/apm-agent-js-zone.git"
   },
   "author": "Brian Ford",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/angular/zone.js/issues"
+    "url": "https://github.com/elastic/apm-agent-js-zone/issues"
   },
   "dependencies": {},
   "devDependencies": {
