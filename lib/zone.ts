@@ -1321,7 +1321,12 @@ const Zone: ZoneType = (function(global: any) {
     patchOnProperties: noop,
     patchMethod: () => noop,
     setNativePromise: (NativePromise: any) => {
-      nativeMicroTaskQueuePromise = NativePromise.resolve(0);
+      // sometimes NativePromise.resolve static function
+      // is not ready yet, (such as core-js/es6.promise)
+      // so we need to check here.
+      if (NativePromise && typeof NativePromise.resolve === FUNCTION) {
+        nativeMicroTaskQueuePromise = NativePromise.resolve(0);
+      }
     },
   };
 
