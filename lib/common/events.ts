@@ -298,6 +298,8 @@ export function patchEventTarget(
         patchOptions.compareTaskCallbackVsDelegate :
         compareTaskCallbackVsDelegate;
 
+    const blackListedEvents: string[] = (Zone as any)[Zone.__symbol__('BLACK_LISTED_EVENTS')];
+
     const makeAddListener = function(
         nativeListener: any, addSource: string, customScheduleFn: any, customCancelFn: any,
         returnTarget = false, prepend = false) {
@@ -326,6 +328,15 @@ export function patchEventTarget(
 
         const eventName = arguments[0];
         const options = arguments[2];
+
+        if (blackListedEvents) {
+          // check black list
+          for (let i = 0; i < blackListedEvents.length; i++) {
+            if (eventName === blackListedEvents[i]) {
+              return nativeListener.apply(this, arguments);
+            }
+          }
+        }
 
         let capture;
         let once = false;
@@ -404,6 +415,10 @@ export function patchEventTarget(
 
         const task: any =
             zone.scheduleEventTask(source, delegate, data, customScheduleFn, customCancelFn);
+
+        // should clear taskData.target to avoid memory leak
+        // issue, https://github.com/angular/angular/issues/20442
+        taskData.target = null;
 
         // need to clear up taskData because it is a global object
         if (data) {
@@ -495,6 +510,11 @@ export function patchEventTarget(
           }
         }
       }
+      // issue 930, didn't find the event name or callback
+      // from zone kept existingTasks, the callback maybe
+      // added outside of zone, we need to call native removeEventListener
+      // to try to remove it.
+      return nativeRemoveEventListener.apply(this, arguments);
     };
 
     proto[LISTENERS_EVENT_LISTENER] = function() {
@@ -606,6 +626,10 @@ export function patchEventPrototype(global: any, api: _ZonePrivate) {
         Event.prototype, 'stopImmediatePropagation',
         (delegate: Function) => function(self: any, args: any[]) {
           self[IMMEDIATE_PROPAGATION_SYMBOL] = true;
+          // we need to call the native stopImmediatePropagation
+          // in case in some hybrid application, some part of
+          // application will be controlled by zone, some are not
+          delegate && delegate.apply(self, args);
         });
   }
 }

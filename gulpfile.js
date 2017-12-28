@@ -104,13 +104,28 @@ gulp.task('build/zone.js', ['compile-esm'], function(cb) {
   return generateScript('./lib/browser/rollup-main.ts', 'zone.js', false, cb);
 });
 
+gulp.task('build/zone.min.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/browser/rollup-main.ts', 'zone.min.js', true, cb);
+});
+
+// Zone test bundle for the browser.
+gulp.task('build/zone-testing-bundle.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/browser/rollup-test-main.ts', 'zone-testing-bundle.js', false, cb);
+});
+
+// Zone test bundle for node.
+gulp.task('build/zone-testing-node-bundle.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/node/rollup-test-main.ts', 'zone-testing-node-bundle.js', false, cb);
+});
+
+// Zone test related files for the browser.
+gulp.task('build/zone-testing.js', ['compile-esm'], function(cb) {
+  return generateScript('./lib/testing/zone-testing.ts', 'zone-testing.js', false, cb);
+});
+
 // Zone for electron/nw environment.
 gulp.task('build/zone-mix.js', ['compile-esm-node'], function(cb) {
     return generateScript('./lib/mix/rollup-mix.ts', 'zone-mix.js', false, cb);
-});
-
-gulp.task('build/zone.min.js', ['compile-esm'], function(cb) {
-  return generateScript('./lib/browser/rollup-main.ts', 'zone.min.js', true, cb);
 });
 
 gulp.task('build/zone-error.js', ['compile-esm'], function(cb) {
@@ -159,6 +174,14 @@ gulp.task('build/zone-patch-cordova.js', ['compile-esm'], function(cb) {
 
 gulp.task('build/zone-patch-cordova.min.js', ['compile-esm'], function(cb) {
     return generateScript('./lib/extra/cordova.ts', 'zone-patch-cordova.min.js', true, cb);
+});
+
+gulp.task('build/zone-patch-electron.js', ['compile-esm'], function(cb) {
+    return generateScript('./lib/extra/electron.ts', 'zone-patch-electron.js', false, cb);
+});
+
+gulp.task('build/zone-patch-electron.min.js', ['compile-esm'], function(cb) {
+    return generateScript('./lib/extra/electron.ts', 'zone-patch-electron.min.js', true, cb);
 });
 
 gulp.task('build/bluebird.js', ['compile-esm'], function(cb) {
@@ -246,6 +269,9 @@ gulp.task('build', [
   'build/zone.js',
   'build/zone.js.d.ts',
   'build/zone.min.js',
+  'build/zone-testing.js',
+  'build/zone-testing-bundle.js',
+  'build/zone-testing-node-bundle.js',
   'build/zone-error.js',
   'build/zone-error.min.js',
   'build/zone-node.js',
@@ -259,6 +285,8 @@ gulp.task('build', [
   'build/webapis-shadydom.min.js',
   'build/zone-patch-cordova.js',
   'build/zone-patch-cordova.min.js',
+  'build/zone-patch-electron.js',
+  'build/zone-patch-electron.min.js',
   'build/zone-mix.js',
   'build/bluebird.js',
   'build/bluebird.min.js',

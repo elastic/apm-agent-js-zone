@@ -69,6 +69,7 @@
     });
     ['it', 'xit', 'fit'].forEach(function (methodName) {
         var originalJasmineFn = jasmineEnv[methodName];
+        jasmineEnv[Zone.__symbol__(methodName)] = originalJasmineFn;
         jasmineEnv[methodName] = function (description, specDefinitions, timeout) {
             arguments[1] = wrapTestInZone(specDefinitions);
             return originalJasmineFn.apply(this, arguments);
@@ -76,6 +77,7 @@
     });
     ['beforeEach', 'afterEach'].forEach(function (methodName) {
         var originalJasmineFn = jasmineEnv[methodName];
+        jasmineEnv[Zone.__symbol__(methodName)] = originalJasmineFn;
         jasmineEnv[methodName] = function (specDefinitions, timeout) {
             arguments[0] = wrapTestInZone(specDefinitions);
             return originalJasmineFn.apply(this, arguments);
