@@ -1,6 +1,6 @@
 {
   "name": "elastic-apm-js-zone",
-  "version": "0.8.19",
+  "version": "0.8.19-tskdt",
   "description": "Zones for JavaScript",
   "main": "dist/zone-node.js",
   "browser": "dist/zone.js",

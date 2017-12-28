@@ -19,7 +19,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 Zone.__load_patch('electron', function (global, Zone, api) {
-    var FUNCTION = 'function';
     var _a = require('electron'), desktopCapturer = _a.desktopCapturer, shell = _a.shell, CallbackRegistry = _a.CallbackRegistry;
     // patch api in renderer process directly
     // desktopCapturer
