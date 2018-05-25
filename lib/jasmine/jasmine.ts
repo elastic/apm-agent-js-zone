@@ -46,7 +46,7 @@
   //     fakeAsync behavior to the childZone.
   let testProxyZone: Zone = null;
 
-  // Monkey patch all of the jasmine DSL so that each function runs in appropriate zone.
+  // patch all of the jasmine DSL so that each function runs in appropriate zone.
   const jasmineEnv: any = jasmine.getEnv();
   ['describe', 'xdescribe', 'fdescribe'].forEach((methodName) => {
     let originalJasmineFn: Function = jasmineEnv[methodName];

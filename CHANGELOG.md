@@ -72,7 +72,7 @@
 
 ### Features
 
-* **rxjs:** fix [#830](https://github.com/angular/zone.js/issues/830), monkey patch rxjs to make rxjs run in correct zone ([#843](https://github.com/angular/zone.js/issues/843)) ([1ed83d0](https://github.com/angular/zone.js/commit/1ed83d0))
+* **rxjs:** fix [#830](https://github.com/angular/zone.js/issues/830), patch rxjs to make rxjs run in correct zone ([#843](https://github.com/angular/zone.js/issues/843)) ([1ed83d0](https://github.com/angular/zone.js/commit/1ed83d0))
 
 
 
@@ -89,7 +89,7 @@
 
 ### Features
 
-* **rxjs:** fix [#830](https://github.com/angular/zone.js/issues/830), monkey patch rxjs to make rxjs run in correct zone ([#843](https://github.com/angular/zone.js/issues/843)) ([1ed83d0](https://github.com/angular/zone.js/commit/1ed83d0))
+* **rxjs:** fix [#830](https://github.com/angular/zone.js/issues/830), patch rxjs to make rxjs run in correct zone ([#843](https://github.com/angular/zone.js/issues/843)) ([1ed83d0](https://github.com/angular/zone.js/commit/1ed83d0))
 
 
 

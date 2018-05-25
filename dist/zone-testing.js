@@ -362,7 +362,7 @@ Zone['SyncTestZoneSpec'] = SyncTestZoneSpec;
     //   - Because ProxyZone is parent fo `childZone` fakeAsync can retroactively add
     //     fakeAsync behavior to the childZone.
     var testProxyZone = null;
-    // Monkey patch all of the jasmine DSL so that each function runs in appropriate zone.
+    // patch all of the jasmine DSL so that each function runs in appropriate zone.
     var jasmineEnv = jasmine.getEnv();
     ['describe', 'xdescribe', 'fdescribe'].forEach(function (methodName) {
         var originalJasmineFn = jasmineEnv[methodName];

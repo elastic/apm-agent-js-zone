@@ -23,7 +23,7 @@
  * 5. (Intercept blocking methods)
  *
  * A zone by itself does not do anything, instead it relies on some other code to route existing
- * platform API through it. (The zone library ships with code which monkey patches all of the
+ * platform API through it. (The zone library ships with code which patches all of the
  * browsers's asynchronous API and redirects them through the zone for interception.)
  *
  * In its simplest form a zone allows one to intercept the scheduling and calling of asynchronous
